@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,9 @@ const GoogleMap = () => {
   const [showVroom, setShowVroom] = useState(false); // Controls visibility of the button and MPG
   const [clickLocation, setClickLocation] = useState<LatLng | null>(null); // Stores the clicked location
   const [userLocation, setUserLocation] = useState<LatLng | null>(null); // Stores the user's location
-  const directionsPanelRef = useRef<HTMLDivElement | null>(null); // Directions panel container
+  const [steps, setSteps] = useState<google.maps.DirectionsStep[]>([]); // Stores route steps
+  const [currentStepIndex, setCurrentStepIndex] = useState(0); // Tracks the current step index
+  const watchIdRef = useRef<number | null>(null); // Ref to store the Geolocation watch ID
 
   const handleMapClick = (latLng: LatLng) => {
     setClickLocation(latLng);
@@ -29,14 +31,14 @@ const GoogleMap = () => {
     setShowVroom(true);
   };
 
-  const handleVroomClick = () => {
-    if (!userLocation || !clickLocation || !directionsServiceRef.current || !directionsRendererRef.current) {
-      console.warn('Missing required information for routing');
+  const updateDirections = (newLocation: LatLng) => {
+    if (!clickLocation || !directionsServiceRef.current) {
+      console.warn('Destination not set or Directions Service unavailable');
       return;
     }
 
     const request = {
-      origin: userLocation,
+      origin: newLocation,
       destination: clickLocation,
       travelMode: google.maps.TravelMode.DRIVING,
     };
@@ -45,20 +47,50 @@ const GoogleMap = () => {
       if (status === google.maps.DirectionsStatus.OK) {
         directionsRendererRef.current!.setDirections(result);
 
-        if (result === null) return
+        if (!result) return
 
-        // Center the map on the route and adjust zoom
-        const route = result.routes[0];
-        const bounds = new google.maps.LatLngBounds();
-        route.legs[0].steps.forEach((step) => {
-          bounds.extend(step.start_location);
-          bounds.extend(step.end_location);
-        });
-        mapInstanceRef.current!.fitBounds(bounds);
+        if (!result.routes || !result.routes[0].legs || !result.routes[0].legs[0].steps) {
+          console.error('No steps available in directions response');
+          return;
+        }
+
+        // Update steps and reset the current step index
+        setSteps(result.routes[0].legs[0].steps);
+        setCurrentStepIndex(0);
       } else {
-        console.error('Failed to render directions:', status);
+        console.error('Failed to update directions:', status);
       }
     });
+  };
+
+  const handleVroomClick = () => {
+    if (!userLocation) {
+      console.warn('User location not available');
+      return;
+    }
+
+    // Calculate initial directions
+    updateDirections(userLocation);
+
+    // Start tracking user location
+    if (navigator.geolocation) {
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (position) => {
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(newLocation); // Update user location state
+          updateDirections(newLocation); // Recalculate directions
+        },
+        (error) => {
+          console.error('Error fetching real-time geolocation:', error);
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 1000 }
+      );
+    } else {
+      console.warn('Geolocation is not supported by this browser.');
+    }
   };
 
   useEffect(() => {
@@ -80,7 +112,6 @@ const GoogleMap = () => {
       directionsServiceRef.current = new google.maps.DirectionsService();
       directionsRendererRef.current = new google.maps.DirectionsRenderer({
         map: map,
-        panel: directionsPanelRef.current, // Set the panel for step-by-step instructions
       });
 
       // Center map on user location
@@ -133,6 +164,13 @@ const GoogleMap = () => {
     };
 
     document.head.appendChild(googleMapsScript);
+
+    // Cleanup Geolocation watch on unmount
+    return () => {
+      if (watchIdRef.current) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    };
   }, []);
 
   return (
@@ -141,13 +179,12 @@ const GoogleMap = () => {
 
       {/* Directions Panel */}
       <div
-        ref={directionsPanelRef}
         style={{
           position: 'absolute',
           top: '10px',
           right: '10px',
           width: '300px',
-          height: '400px',
+          height: '200px',
           overflow: 'auto',
           backgroundColor: '#fff',
           padding: '10px',
@@ -155,7 +192,16 @@ const GoogleMap = () => {
           boxShadow: '0 2px 5px rgba(0, 0, 0, 0.3)',
           zIndex: 1000,
         }}
-      />
+      >
+        {steps.length > 0 && (
+          <>
+            <div>
+              <strong>Step {currentStepIndex + 1} of {steps.length}:</strong>
+              <p dangerouslySetInnerHTML={{ __html: steps[currentStepIndex].instructions }} />
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Money Saved Stat */}
       <Card className="absolute top-4 left-4 p-2 bg-green-500 text-white">
