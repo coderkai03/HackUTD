@@ -26,12 +26,93 @@ const GoogleMap = () => {
   const [distanceTraveled, setDistanceTraveled] = useState(0); // Total distance traveled in meters
   const [fuelUsed, setFuelUsed] = useState(0); // Total fuel used in gallons
   const [currentMPG, setCurrentMPG] = useState(0); // Real-time MPG
+  const [loading, setLoading] = useState(false);
+  const [instructions, setInstructions] = useState('');
   const watchIdRef = useRef<number | null>(null); // Ref to store the Geolocation watch ID
 
   const handleMapClick = (latLng: LatLng) => {
     setClickLocation(latLng);
-    setTargetMPG(45); // Example target MPG
+    setTargetMPG(40); // Example target MPG
     setShowVroom(true);
+  };
+
+  const fetchDrivingInstructions = async (latitude: any, longitude: any) => {
+    setLoading(true);
+    try {
+      // Mocked weather and time
+      const weather = await fetchWeather(latitude, longitude);
+      const time = fetchTime();
+  
+      // Shorter tips for optimizing fuel efficiency based on weather
+      const fuelEfficiencyTips: Record<string, string> = {
+        "clear sky": "Use cruise control.",
+        "few clouds": "Avoid rapid acceleration.",
+        "scattered clouds": "Keep windows closed.",
+        "broken clouds": "Use A/C sparingly.",
+        "shower rain": "Slow down, check tires.",
+        "rain": "Avoid puddles, brake gently.",
+        "thunderstorm": "Drive cautiously.",
+        "snow": "Accelerate/brake gently.",
+        "mist": "Maintain a steady speed.",
+      };
+  
+      // Additional tips based on time of day
+      const timeTips = {
+        Morning: "Avoid idling to warm up your car—it wastes fuel. Start driving gently.",
+        Afternoon: "Anticipate stop-and-go traffic to minimize fuel use in congestion.",
+        Evening: "Drive smoothly to save fuel and reduce fatigue after a long day.",
+      };
+  
+      // Determine the tip based on weather and time
+      const weatherTip = fuelEfficiencyTips[weather as keyof typeof fuelEfficiencyTips] || "Drive safely to maximize fuel efficiency.";
+      const timePeriod = time.includes("Afternoon") ? "Afternoon" : time.includes("Morning") ? "Morning" : "Evening";
+      const timeTip = timeTips[timePeriod];
+  
+      // Combine tips
+      const mockInstructions = `${weatherTip} ${timeTip}`;
+      console.log(`Mocked instructions for ${weather}, ${time}: ${mockInstructions}`);
+      setInstructions(mockInstructions);
+    } catch (error) {
+      console.error('Error generating mock driving instructions:', error);
+      setInstructions('Unable to generate fuel efficiency tips.');
+    } finally {
+      setLoading(false);
+    }
+  };  
+
+  const fetchWeather = (latitude: any, longitude: any) => {
+    // Mock weather data
+    const weatherConditions = [
+      "clear sky",
+      "few clouds",
+      "scattered clouds",
+      "broken clouds",
+      "shower rain",
+      "rain",
+      "thunderstorm",
+      "snow",
+      "mist",
+    ];
+  
+    // Helper function to get random weather
+    const getRandomWeather = () => {
+      const randomIndex = Math.floor(Math.random() * weatherConditions.length);
+      return weatherConditions[randomIndex];
+    };
+  
+    // Return random weather without delay
+    const randomWeather = getRandomWeather();
+    console.log(`Mock weather data for (${latitude}, ${longitude}):`, randomWeather);
+    return Promise.resolve(randomWeather);
+  };  
+  
+  const fetchTime = () => {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const isPM = hours >= 12;
+  
+    return `${isPM ? 'Afternoon' : 'Morning'} (${hours}:${minutes < 10 ? '0' : ''}${minutes})`;
   };
 
   const calculateDistance = (loc1: LatLng, loc2: LatLng): number => {
@@ -93,7 +174,7 @@ const GoogleMap = () => {
     // Start tracking user location
     if (navigator.geolocation) {
       watchIdRef.current = navigator.geolocation.watchPosition(
-        (position) => {
+        async (position) => {
           const newLocation = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
@@ -113,6 +194,8 @@ const GoogleMap = () => {
           if (currentMPG >= targetMPG) {
             updateGas(); // Increment money saved
           }
+
+          await fetchDrivingInstructions(userLocation.lat, userLocation.lng)
 
           setUserLocation(newLocation); // Update user location state
           updateDirections(newLocation); // Recalculate directions
@@ -238,6 +321,7 @@ const GoogleMap = () => {
         {steps.length > 0 && (
           <div>
             <p dangerouslySetInnerHTML={{ __html: steps[currentStepIndex].instructions }} />
+            {(instructions) && <div>Tip: {instructions}</div>}
           </div>
         )}
       </div>
