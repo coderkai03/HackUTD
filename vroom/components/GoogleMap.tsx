@@ -184,8 +184,8 @@ const GoogleMap = () => {
           top: '75px',
           right: '10px',
           width: '200px',
-          height: '50px',
-          overflow: 'auto',
+          maxHeight: '50vh', // Ensures the panel doesn't exceed half the viewport height
+          overflowY: 'auto', // Allows scrolling if content exceeds max height
           backgroundColor: '#fff',
           padding: '10px',
           border: '1px solid #ccc',
@@ -194,13 +194,12 @@ const GoogleMap = () => {
         }}
       >
         {steps.length > 0 && (
-          <>
-            <div>
-              <p dangerouslySetInnerHTML={{ __html: steps[currentStepIndex].instructions }} />
-            </div>
-          </>
+          <div>
+            <p dangerouslySetInnerHTML={{ __html: steps[currentStepIndex].instructions }} />
+          </div>
         )}
       </div>
+
 
       {/* Money Saved Stat */}
       <Card className="absolute top-4 right-4 p-2 bg-green-500 text-white">
