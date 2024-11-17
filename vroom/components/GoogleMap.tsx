@@ -23,12 +23,30 @@ const GoogleMap = () => {
   const [userLocation, setUserLocation] = useState<LatLng | null>(null); // Stores the user's location
   const [steps, setSteps] = useState<google.maps.DirectionsStep[]>([]); // Stores route steps
   const [currentStepIndex, setCurrentStepIndex] = useState(0); // Tracks the current step index
+  const [distanceTraveled, setDistanceTraveled] = useState(0); // Total distance traveled in meters
+  const [fuelUsed, setFuelUsed] = useState(0); // Total fuel used in gallons
+  const [currentMPG, setCurrentMPG] = useState(0); // Real-time MPG
   const watchIdRef = useRef<number | null>(null); // Ref to store the Geolocation watch ID
 
   const handleMapClick = (latLng: LatLng) => {
     setClickLocation(latLng);
     setTargetMPG(45); // Example target MPG
     setShowVroom(true);
+  };
+
+  const calculateDistance = (loc1: LatLng, loc2: LatLng): number => {
+    const R = 6371e3; // Earth's radius in meters
+    const lat1 = (loc1.lat * Math.PI) / 180;
+    const lat2 = (loc2.lat * Math.PI) / 180;
+    const deltaLat = ((loc2.lat - loc1.lat) * Math.PI) / 180;
+    const deltaLng = ((loc2.lng - loc1.lng) * Math.PI) / 180;
+  
+    const a =
+      Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  
+    return R * c; // Distance in meters
   };
 
   const updateDirections = (newLocation: LatLng) => {
@@ -80,6 +98,19 @@ const GoogleMap = () => {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
+
+          // Update distance traveled
+          const distance = calculateDistance(userLocation, newLocation);
+          setDistanceTraveled((prev) => prev + distance);
+
+          // Simulate fuel usage
+          const milesTraveled = distance / 1609.34; // Convert meters to miles
+          const gallonsUsed = milesTraveled / targetMPG; // Assume target MPG for fuel usage
+          setFuelUsed((prev) => prev + gallonsUsed);
+
+          // Update real-time MPG
+          setCurrentMPG((distanceTraveled + distance) / (fuelUsed + gallonsUsed));
+
           setUserLocation(newLocation); // Update user location state
           updateDirections(newLocation); // Recalculate directions
         },
@@ -213,16 +244,19 @@ const GoogleMap = () => {
       {/* Conditionally render Vroom Button and Target MPG */}
       {showVroom && (
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 space-y-4 text-center">
-          <div className="text-lg font-semibold">Target MPG: {targetMPG}</div>
-          <Button
-            variant="default"
-            size="lg"
-            className="px-8 py-6 text-xl font-bold shadow-lg hover:shadow-xl transition-shadow duration-300"
-            onClick={handleVroomClick}
-          >
-            Vroom
-          </Button>
+        <div className="text-lg font-semibold bg-white p-2 rounded shadow">Target MPG: {targetMPG}</div>
+        <div className={`text-lg font-semibold bg-white p-2 rounded shadow ${currentMPG < targetMPG ? 'text-red-500' : 'text-green-500'}`}>
+          Current MPG: {currentMPG.toFixed(2)}
         </div>
+        <Button
+          variant="default"
+          size="lg"
+          className="px-8 py-6 text-xl font-bold shadow-lg hover:shadow-xl transition-shadow duration-300"
+          onClick={handleVroomClick}
+        >
+          Vroom
+        </Button>
+      </div>
       )}
     </div>
   );
