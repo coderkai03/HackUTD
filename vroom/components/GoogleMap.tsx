@@ -183,7 +183,7 @@ const GoogleMap = () => {
           position: 'absolute',
           top: '50px',
           right: '10px',
-          width: '50vh',
+          width: '100px',
           height: '50px',
           overflow: 'auto',
           backgroundColor: '#fff',
