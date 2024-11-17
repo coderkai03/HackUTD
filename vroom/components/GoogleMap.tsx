@@ -16,7 +16,7 @@ const GoogleMap = () => {
   const mapInstanceRef = useRef<google.maps.Map | null>(null); // Reference for the map instance
   const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
-  const [moneySaved, setMoneySaved] = useState(1.25); // Initial value
+  const [moneySaved, setMoneySaved] = useState(0); // Initial value
   const [targetMPG, setTargetMPG] = useState(0); // Holds target MPG value
   const [showVroom, setShowVroom] = useState(false); // Controls visibility of the button and MPG
   const [clickLocation, setClickLocation] = useState<LatLng | null>(null); // Stores the clicked location
@@ -110,6 +110,9 @@ const GoogleMap = () => {
 
           // Update real-time MPG
           setCurrentMPG((distanceTraveled + distance) / (fuelUsed + gallonsUsed));
+          if (currentMPG >= targetMPG) {
+            updateGas(); // Increment money saved
+          }
 
           setUserLocation(newLocation); // Update user location state
           updateDirections(newLocation); // Recalculate directions
@@ -123,6 +126,14 @@ const GoogleMap = () => {
       console.warn('Geolocation is not supported by this browser.');
     }
   };
+
+  const updateGas = () => {
+    setMoneySaved((prevMoneySaved) => {
+      console.log('Previous Money Saved:', prevMoneySaved);
+      return prevMoneySaved + 0.05;
+    });
+  };
+  
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -244,9 +255,9 @@ const GoogleMap = () => {
       {/* Conditionally render Vroom Button and Target MPG */}
       {showVroom && (
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 space-y-4 text-center">
-        <div className="text-lg font-semibold bg-white p-2 rounded shadow">Target MPG: {targetMPG}</div>
+        <div className="text-lg font-semibold bg-white p-2 rounded shadow">2024 RAV4 Hybrid: {targetMPG}mpg</div>
         <div className={`text-lg font-semibold bg-white p-2 rounded shadow ${currentMPG < targetMPG ? 'text-red-500' : 'text-green-500'}`}>
-          Current MPG: {currentMPG.toFixed(2)}
+          Current: {currentMPG.toFixed(2)}mpg
         </div>
         <Button
           variant="default"
