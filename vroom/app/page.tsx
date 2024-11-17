@@ -1,16 +1,11 @@
-import type { AppProps } from 'next/app';
-import Head from 'next/head';
-// import '@/styles/globals.css';
+import GoogleMap from "@/components/GoogleMap";
+import Image from "next/image";
 
-export default function Home({ Component, pageProps }: AppProps) {
+export default function Home() {
   return (
-    <>
-      <Head>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.ico" />
-        <meta name="theme-color" content="#000000" />
-      </Head>
-      <Component {...pageProps} />
-    </>
+    <div>
+      hi
+      {/* <GoogleMap/> */}
+    </div>
   );
 }
