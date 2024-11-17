@@ -181,10 +181,10 @@ const GoogleMap = () => {
       <div
         style={{
           position: 'absolute',
-          top: '10px',
+          top: '50px',
           right: '10px',
-          width: '300px',
-          height: '200px',
+          width: '50vh',
+          height: '50px',
           overflow: 'auto',
           backgroundColor: '#fff',
           padding: '10px',
@@ -196,7 +196,6 @@ const GoogleMap = () => {
         {steps.length > 0 && (
           <>
             <div>
-              <strong>Step {currentStepIndex + 1} of {steps.length}:</strong>
               <p dangerouslySetInnerHTML={{ __html: steps[currentStepIndex].instructions }} />
             </div>
           </>
@@ -204,7 +203,7 @@ const GoogleMap = () => {
       </div>
 
       {/* Money Saved Stat */}
-      <Card className="absolute top-4 left-4 p-2 bg-green-500 text-white">
+      <Card className="absolute top-4 right-4 p-2 bg-green-500 text-white">
         <div className="flex items-center space-x-2">
           <DollarSign className="h-4 w-4" />
           <span className="font-bold">{moneySaved.toFixed(2)}</span>
