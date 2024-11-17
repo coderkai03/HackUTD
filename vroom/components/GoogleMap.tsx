@@ -181,9 +181,9 @@ const GoogleMap = () => {
       <div
         style={{
           position: 'absolute',
-          top: '50px',
+          top: '75px',
           right: '10px',
-          width: '100px',
+          width: '200px',
           height: '50px',
           overflow: 'auto',
           backgroundColor: '#fff',
